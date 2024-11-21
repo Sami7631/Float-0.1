@@ -1,0 +1,174 @@
+local player = game.Players.LocalPlayer
+local speed = 50
+local moveAmount = 5 -- Hareket miktarı
+local parts = {} -- Oluşturulan partları saklamak için bir tablo
+
+local userInputService = game:GetService("UserInputService")
+
+-- GUI oluşturma
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- Sürükleme kare oluşturma
+local dragFrame = Instance.new("Frame")
+dragFrame.Size = UDim2.new(0, 200, 0, 50)
+dragFrame.Position = UDim2.new(1, -260, 0.5, -75) -- + butonunun üstünde
+dragFrame.BackgroundColor3 = Color3.new(0, 0, 0) -- Arka plan rengini siyah yap
+dragFrame.BorderSizePixel = 0
+dragFrame.Parent = screenGui
+
+local dragLabel = Instance.new("TextLabel")
+dragLabel.Size = UDim2.new(1, -50, 1, 0)
+dragLabel.Position = UDim2.new(0, 50, 0, 0)
+dragLabel.Text = "Float 0.1 Hub"
+dragLabel.TextColor3 = Color3.new(1, 1, 1) -- Metin rengini beyaz yap
+dragLabel.BackgroundTransparency = 1
+dragLabel.Font = Enum.Font.SourceSansBold
+dragLabel.TextSize = 20
+dragLabel.Parent = dragFrame
+
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 50, 1, 0)
+closeButton.Position = UDim2.new(0, 0, 0, 0)
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.new(1, 0.2, 0.2) -- Metin rengini açık kırmızı yap
+closeButton.BackgroundColor3 = Color3.new(0, 0, 0) -- Arka plan rengini siyah yap
+closeButton.BorderSizePixel = 0
+closeButton.Font = Enum.Font.SourceSansBold
+closeButton.TextSize = 20
+closeButton.Parent = dragFrame
+
+-- Köşeleri yuvarlatma
+local function roundify(guiObject)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 10) -- Köşe yarıçapı
+    corner.Parent = guiObject
+end
+
+roundify(dragFrame)
+roundify(closeButton)
+
+-- + ve - butonları oluşturma
+local plusButton = Instance.new("TextButton")
+plusButton.Size = UDim2.new(0, 50, 0, 50)
+plusButton.Position = UDim2.new(1, -60, 0.5, -25) -- Sağda ortada
+plusButton.Text = "+"
+plusButton.TextColor3 = Color3.new(0, 1, 0) -- Metin rengini yeşil yap
+plusButton.BackgroundColor3 = Color3.new(0, 0, 0) -- Arka plan rengini siyah yap
+plusButton.BorderSizePixel = 0
+plusButton.Font = Enum.Font.SourceSansBold
+plusButton.TextSize = 30
+plusButton.Parent = screenGui
+
+local minusButton = Instance.new("TextButton")
+minusButton.Size = UDim2.new(0, 50, 0, 50)
+minusButton.Position = UDim2.new(1, -60, 0.5, 25) -- Sağda ortada
+minusButton.Text = "-"
+minusButton.TextColor3 = Color3.new(0.6, 0, 0) -- Metin rengini koyu kırmızı yap
+minusButton.BackgroundColor3 = Color3.new(0, 0, 0) -- Arka plan rengini siyah yap
+minusButton.BorderSizePixel = 0
+minusButton.Font = Enum.Font.SourceSansBold
+minusButton.TextSize = 30
+minusButton.Parent = screenGui
+
+local deleteAllButton = Instance.new("TextButton")
+deleteAllButton.Size = UDim2.new(0, 100, 0, 50) -- Buton küçültüldü
+deleteAllButton.Position = UDim2.new(1, -160, 0.5, 75) -- Sağda ortada, - butonunun altında
+deleteAllButton.Text = "Bütün Partları sil"
+deleteAllButton.TextColor3 = Color3.new(1, 1, 1) -- Metin rengini beyaz yap
+deleteAllButton.BackgroundColor3 = Color3.new(0, 0, 0) -- Arka plan rengini siyah yap
+deleteAllButton.BorderSizePixel = 0
+deleteAllButton.Font = Enum.Font.SourceSansBold
+deleteAllButton.TextSize = 20
+deleteAllButton.Parent = screenGui
+
+roundify(plusButton)
+roundify(minusButton)
+roundify(deleteAllButton)
+
+-- Sürükleme fonksiyonu
+local dragging = false
+local dragInput, mousePos, framePos
+
+dragFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        mousePos = input.Position
+        framePos = dragFrame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+dragFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+userInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - mousePos
+        local newPos = UDim2.new(framePos.X.Scale, framePos.X.Offset + delta.X, framePos.Y.Scale, framePos.Y.Offset + delta.Y)
+        dragFrame.Position = newPos
+        plusButton.Position = newPos + UDim2.new(0, 0, 0, 50)
+        minusButton.Position = newPos + UDim2.new(0, 0, 0, 100)
+        deleteAllButton.Position = newPos + UDim2.new(0, 0, 0, 150)
+    end
+end)
+
+-- GUI'yi kapatma fonksiyonu
+closeButton.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
+
+-- + butonuna basıldığında part oluşturma
+plusButton.MouseButton1Click:Connect(function()
+    local character = player.Character
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid and humanoid.Health > 0 then
+        local part = Instance.new("Part")
+        part.Size = Vector3.new(12, 2, 12)
+        part.Anchored = true
+        part.Transparency = 0.5 -- Görünürlüğü 0.5 yap
+        part.Position = character.PrimaryPart.Position - Vector3.new(0, 3, 0)
+        part.Parent = workspace
+        table.insert(parts, part) -- Partı tabloya ekle
+    end
+end)
+
+-- - butonuna basıldığında en son oluşturulan partı silme
+minusButton.MouseButton1Click:Connect(function()
+    if #parts > 0 then
+        local part = table.remove(parts) -- En son partı tablodan çıkar
+        if part then
+            part:Destroy() -- Partı sil
+        end
+    end
+end)
+
+-- Bütün partları silme
+deleteAllButton.MouseButton1Click:Connect(function()
+    for _, part in ipairs(parts) do
+        if part then
+            part:Destroy() -- Partları sil
+        end
+    end
+    parts = {} -- Tabloyu temizle
+end)
+
+-- Kullanıcının canını kontrol etme ve scripti tekrar çalıştırma
+local function checkHealth()
+    local character = player.Character
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if humanoid and humanoid.Health <= 0 then
+        wait(10) -- Yeniden doğma süresi
+        script:Clone().Parent = player.Backpack
+    end
+end
+
+game:GetService("RunService").Stepped:Connect(checkHealth)
